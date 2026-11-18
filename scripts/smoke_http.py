@@ -2,6 +2,7 @@
 import argparse
 import json
 import time
+from http.client import HTTPException
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
@@ -14,7 +15,9 @@ for attempt in range(30):
         with urlopen(base + '/api/health', timeout=2) as response:
             assert json.load(response)['status'] == 'ok'
         break
-    except (URLError, TimeoutError):
+    # Docker may accept a TCP connection before Uvicorn is listening while the
+    # seed/audio generator is running. Treat resets/disconnects as not-ready.
+    except (OSError, HTTPException):
         if attempt == 29:
             raise
         time.sleep(1)

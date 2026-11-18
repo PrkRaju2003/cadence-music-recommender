@@ -9,7 +9,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-python@v7.1.0
         with:
-          python-version: '3.13'
+          python-version: "3.13"
           cache: pip
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m cadence.seed
