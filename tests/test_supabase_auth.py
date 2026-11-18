@@ -12,6 +12,8 @@ def cloud():
     def handle(request):
         calls.append(request)
         path=request.url.path
+        if path.endswith('cadence_rate_limit'):
+            return httpx.Response(200,json={'allowed':True,'limit':120,'remaining':119,'retry_after':60})
         if path=='/auth/v1/token':
             return httpx.Response(200,json={'access_token':'verified-test-token','refresh_token':'refresh-test-token','expires_in':3600})
         if path=='/auth/v1/signup':
@@ -59,7 +61,7 @@ def test_anonymous_cannot_read_private_data(cloud):
     client,calls=cloud
     for path in ['/api/users','/api/users/41/history','/api/analytics','/api/recommendations/41','/api/sql/queries']:
         assert client.get(path).status_code==401
-    assert not any('/rpc/' in str(r.url) for r in calls)
+    assert not any('/rpc/' in str(r.url) and not r.url.path.endswith('cadence_rate_limit') for r in calls)
 
 
 def test_forged_cookie_is_validated_by_supabase_auth(cloud):
@@ -114,7 +116,19 @@ def test_sql_reports_are_allowlisted_and_bounded(cloud):
 
 def test_https_cookies_are_secure():
     settings=SupabaseSettings('https://project.supabase.co','sb_publishable_test',True)
-    transport=httpx.MockTransport(lambda req:httpx.Response(200,json={'access_token':'t','refresh_token':'r','expires_in':3600}))
+    transport=httpx.MockTransport(lambda req:httpx.Response(200,json={'allowed':True,'limit':120,'remaining':119,'retry_after':60} if req.url.path.endswith('cadence_rate_limit') else {'access_token':'t','refresh_token':'r','expires_in':3600}))
     with TestClient(create_supabase_app(settings,SupabaseGateway(settings,transport)),base_url='https://cadence.example') as client:
         response=sign_in(client)
         assert all('Secure' in c for c in response.headers.get_list('set-cookie'))
+
+
+def test_progress_requires_verified_owner_and_uses_scoped_rpc(cloud):
+    client,calls=cloud
+    body={'session_id':'owned-session','track_id':1,'played_ms':5000,'event_key':'same-play','source':'catalog'}
+    assert client.post('/api/playback/progress',json=body).status_code==401
+    sign_in(client)
+    assert client.post('/api/playback/progress',json=body).status_code==201
+    request=next(r for r in calls if r.url.path.endswith('cadence_play_progress'))
+    assert request.headers['authorization']=='Bearer verified-test-token'
+    import json
+    assert json.loads(request.content)['p_event_key']=='same-play'

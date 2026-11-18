@@ -13,3 +13,5 @@ powerbi/**/.pbi/
 powerbi/**/cache.abf
 .coverage
 htmlcov/
+
+supabase/.temp/

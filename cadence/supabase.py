@@ -63,7 +63,7 @@ class SupabaseGateway:
             message = (error.get('msg') or error.get('message') or 'Account request failed') if path.startswith('/auth/') else {
                 403:'Access denied',409:'Event key already used',422:'Invalid request data',401:'Please sign in again'
             }.get(status,'Database request failed')
-            raise HTTPException(status, message)
+            raise HTTPException(status, message, headers={'Retry-After':response.headers.get('Retry-After','60')} if status == 429 else None)
         return response.json() if response.content else {}
 
     def rpc(self, name, token=None, payload=None):

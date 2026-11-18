@@ -64,6 +64,7 @@ def create_demo_app(gateway):
         listener(body.user_id)
         return {'id':'demo-'+str(uuid4()),'user_id':body.user_id,'demo':True}
 
+    @app.post('/api/playback/progress',status_code=201)
     @app.post('/api/playback',status_code=201)
     def playback(body:CloudPlayback):
         if not body.session_id.startswith('demo-') or body.track_id not in data()[2].tracks or body.played_ms>data()[2].tracks[body.track_id]['duration_ms']:

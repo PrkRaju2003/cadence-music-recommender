@@ -21,6 +21,11 @@ let user = 1,
   requestVersion = 0,
   toastTimer,
   playInFlight = false;
+let playKey = null,
+  progressBusy = false,
+  pendingProgress = new Map();
+const guestPlays = new Map();
+let insightBusy = false;
 const audio = $("#audio");
 audio.volume = 0.65;
 const escapeHtml = (s) =>
@@ -182,21 +187,91 @@ function renderCatalog() {
 }
 $("#search").addEventListener("input", renderCatalog);
 $("#genre-filter").addEventListener("change", renderCatalog);
-async function flush() {
-  if (!current || !session || heard < 0.15) return;
-  const event = {
+function progressEvent() {
+  if (!current || !session || heard < 0.15) return null;
+  return {
     session_id: session,
     track_id: current.id,
     played_ms: Math.min(current.duration_ms, Math.round(heard * 1000)),
     source,
-    event_key: crypto.randomUUID(),
+    event_key: playKey,
   };
-  heard = 0;
-  try {
-    await post("/playback", event);
-  } catch (e) {
-    toast("Listening event could not be saved: " + e.message);
+}
+async function flush() {
+  const event = progressEvent();
+  if (event) {
+    if (appMode === "showcase")
+      guestPlays.set(event.event_key, {
+        ...event,
+        genre: current.genre,
+        duration_ms: current.duration_ms,
+        date: new Date().toISOString().slice(0, 10),
+      });
+    else pendingProgress.set(event.event_key, event);
   }
+  if (appMode === "showcase") return;
+  // Failed requests stay queued. A retry uses the same key and cumulative time.
+  if (progressBusy) return;
+  progressBusy = true;
+  try {
+    for (const [key, payload] of pendingProgress) {
+      await post(
+        appMode === "supabase" ? "/playback/progress" : "/playback",
+        payload,
+      );
+      if (pendingProgress.get(key) === payload) pendingProgress.delete(key);
+      if (appMode === "demo" && playKey === key) {
+        heard = 0;
+        playKey = crypto.randomUUID();
+      }
+    }
+  } catch (e) {
+    toast("Listening progress is waiting to sync: " + e.message);
+  } finally {
+    progressBusy = false;
+  }
+}
+function guestAnalytics(data) {
+  if (appMode !== "showcase") return data;
+  const events = [...guestPlays.values()],
+    t = data.totals,
+    count = events.length;
+  const original = t.plays;
+  t.plays += count;
+  t.listening_minutes = Number(
+    (
+      Number(t.listening_minutes) +
+      events.reduce((n, e) => n + e.played_ms, 0) / 60000
+    ).toFixed(2),
+  );
+  if (count) {
+    t.completion_pct = (
+      (original * t.completion_pct +
+        events.reduce((n, e) => n + (100 * e.played_ms) / e.duration_ms, 0)) /
+      t.plays
+    ).toFixed(1);
+    t.skip_pct = (
+      (original * t.skip_pct +
+        events.filter((e) => e.played_ms / e.duration_ms < 0.3).length * 100) /
+      t.plays
+    ).toFixed(1);
+  }
+  for (const e of events) {
+    let day = data.daily.find((d) => d.play_date === e.date);
+    if (!day) {
+      day = { play_date: e.date, plays: 0 };
+      data.daily.push(day);
+    }
+    day.plays++;
+    let genre = data.genres.find((g) => g.genre === e.genre);
+    if (!genre) {
+      genre = { genre: e.genre, plays: 0 };
+      data.genres.push(genre);
+    }
+    genre.plays++;
+  }
+  data.daily.sort((a, b) => a.play_date.localeCompare(b.play_date));
+  return data;
 }
 async function play(id, origin = "catalog", ids = tracks.map((t) => t.id)) {
   if (playInFlight) return;
@@ -210,6 +285,7 @@ async function play(id, origin = "catalog", ids = tracks.map((t) => t.id)) {
     source = origin;
     queue = ids;
     heard = 0;
+    playKey = crypto.randomUUID();
     lastTime = 0;
     audio.src = `${API_PREFIX}/media/${id}`;
     $("#now-title").textContent = current.title;
@@ -290,19 +366,20 @@ $("#listener").addEventListener("change", async () => {
   }
 });
 async function loadInsights() {
-  const [data, evaluation] = await Promise.all([
+  const [rawData, evaluation] = await Promise.all([
     api("/analytics"),
     api("/evaluation"),
   ]);
+  const data = guestAnalytics(rawData);
   const t = data.totals;
   $("#kpis").innerHTML = [
     [
       "TOTAL PLAYS",
       t.plays.toLocaleString(),
       appMode === "supabase"
-        ? "Your private listening activity"
+        ? "Your activity · updates every 5 seconds"
         : appMode === "showcase"
-          ? "Fixed synthetic showcase data"
+          ? "Sample data + plays in this tab"
           : "Synthetic seed + demo events",
     ],
     [
@@ -313,7 +390,7 @@ async function loadInsights() {
     [
       "COMPLETION",
       `${t.completion_pct || 0}%`,
-      "Average fraction of track played",
+      "Average heard so far · live progress",
     ],
     ["SKIP RATE", `${t.skip_pct || 0}%`, "A skip is less than 30% played"],
   ]
@@ -381,20 +458,40 @@ async function loadApp() {
   }
 }
 
+// Heartbeat and visible dashboard refresh are bounded; no background polling.
+setInterval(async () => {
+  if (document.hidden) return;
+  if (!audio.paused && appMode !== "demo") await flush();
+  else if (pendingProgress.size) await flush();
+  if (
+    !$("#insights").hidden &&
+    !insightBusy &&
+    !document.body.classList.contains("auth-gated")
+  ) {
+    insightBusy = true;
+    try {
+      await loadInsights();
+    } catch (e) {
+      toast(e.message);
+    } finally {
+      insightBusy = false;
+    }
+  }
+}, 5000);
+audio.addEventListener("pause", () => {
+  if (appMode !== "demo") flush();
+});
 window.addEventListener("pagehide", () => {
-  if (!current || !session || heard < 0.15) return;
-  const payload = {
-    session_id: session,
-    track_id: current.id,
-    played_ms: Math.min(current.duration_ms, Math.round(heard * 1000)),
-    source,
-    event_key: crypto.randomUUID(),
-  };
-  navigator.sendBeacon(
-    API_PREFIX + "/api/playback",
-    new Blob([JSON.stringify(payload)], { type: "application/json" }),
-  );
-  heard = 0;
+  const event = progressEvent();
+  if (appMode === "showcase") return;
+  if (event) pendingProgress.set(event.event_key, event);
+  for (const payload of pendingProgress.values())
+    navigator.sendBeacon(
+      API_PREFIX +
+        "/api" +
+        (appMode === "supabase" ? "/playback/progress" : "/playback"),
+      new Blob([JSON.stringify(payload)], { type: "application/json" }),
+    );
 });
 
 function gate(show) {
@@ -492,6 +589,8 @@ $("#sign-out").addEventListener("click", async () => {
     audio.pause();
     await flush();
     await post("/auth/logout", {});
+    pendingProgress.clear();
+    heard = 0;
     session = null;
     current = null;
     audio.removeAttribute("src");
@@ -545,7 +644,7 @@ async function start() {
     appMode = config.mode;
     if (appMode === "showcase") {
       $(".demo-banner").innerHTML =
-        'Interactive demo · 40 synthetic listeners · guest playback is not saved. <a href="/">Create an account to save your journey ↗</a>';
+        'Live demo · sample data + your plays in this tab · refreshes every 5s. Guest activity resets on reload; SQL reports use sample data. <a href="/">Create an account to save your journey ↗</a>';
     }
     if (config.auth_required) await signedIn();
     else await loadApp();

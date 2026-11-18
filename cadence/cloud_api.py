@@ -18,6 +18,7 @@ from .db import ROOT
 from .recommender import HybridRecommender, MODEL_VERSION
 from .sql_reports import REPORTS, ReportInput
 from .supabase import SupabaseGateway
+from .rate_limit import check_rate
 
 ACCESS_COOKIE = 'cadence_access'
 REFRESH_COOKIE = 'cadence_refresh'
@@ -64,7 +65,14 @@ def create_supabase_app(settings, gateway=None):
         origin = request.headers.get('origin')
         if request.method in {'POST','PUT','PATCH','DELETE'} and origin and origin != str(request.base_url).rstrip('/'):
             return JSONResponse({'detail':'Cross-origin writes are not allowed'},status_code=403)
+        try:
+            quota = await check_rate(request, gateway)
+        except HTTPException as error:
+            return JSONResponse({'detail':error.detail},status_code=error.status_code,headers={**(error.headers or {}),'Cache-Control':'no-store'})
         response = await call_next(request)
+        if quota:
+            response.headers['X-RateLimit-Limit'] = str(quota['limit'])
+            response.headers['X-RateLimit-Remaining'] = str(quota['remaining'])
         if request.url.path.startswith('/api/'):
             response.headers['Cache-Control'] = 'no-store'
         response.headers['X-Content-Type-Options'] = 'nosniff'
@@ -171,6 +179,10 @@ def create_supabase_app(settings, gateway=None):
     @app.post('/api/playback',status_code=201)
     def playback(body: CloudPlayback,viewer: Identity):
         return gateway.rpc('record_play',viewer['token'],{'p_'+k:v for k,v in body.model_dump().items()})
+
+    @app.post('/api/playback/progress',status_code=201)
+    def progress(body: CloudPlayback,viewer: Identity):
+        return gateway.rpc('play_progress',viewer['token'],{'p_'+k:v for k,v in body.model_dump().items()})
 
     @app.get('/api/users/{user_id}/history')
     def history(user_id: int,viewer: Identity,limit: int=Query(20,ge=1,le=100)):
