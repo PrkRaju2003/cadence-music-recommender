@@ -7,6 +7,8 @@ Built as an interview-ready engineering project: reproducible data, actual audio
 ![Cadence music discovery interface](docs/discover.jpg)
 
 
+**[Try the live no-account demo](https://cadence-prk.vercel.app/demo/)** · **[Account sign-in](https://cadence-prk.vercel.app/)** · [60-second walkthrough](docs/walkthrough.md)
+
 ## Showcase without real users
 
 The no-account demo uses **40 synthetic listeners and 4,480 seeded plays**. Visitors can switch listeners, compare recommendations, play real demo audio, run read-only SQL reports, and inspect the evaluation table. Guest actions do not change real account histories or fabricate user traction.

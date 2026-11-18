@@ -69,3 +69,7 @@ The browser accumulates actual playback progress, ignoring large seek jumps. It 
 Recommendation request and track exposure records support monitoring; a `recommendation` playback source is not causal attribution or click-through rate. Do not infer conversions from it without explicit request-item correlation and an experiment design.
 
 The API is a local engineering demo with selectable synthetic identities, **not authentication**. Do not expose it to untrusted traffic unchanged. Public hosting requires authentication/authorization, CORS/origin review, rate limiting, request size limits, secure transport, operational backups, and a persistence strategy. Container deployment instructions are provided without claiming a live hosted backend.
+
+## Supabase and public showcase update
+
+The original SQLite sandbox is retained for offline development. The hosted app now uses Supabase Auth, PostgreSQL RPCs, private owner-scoped data, and a separate anonymous synthetic showcase. See [Supabase architecture and setup](supabase.md) for the current cloud path. The app runs on Vercel at https://cadence-prk.vercel.app/. Public HTTP verification is recorded in `hosted-check.json`.

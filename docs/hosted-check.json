@@ -1,0 +1,13 @@
+{
+  "checked_on": "2026-11-18",
+  "url": "https://cadence-prk.vercel.app/demo/",
+  "status": "passed",
+  "synthetic_listeners": 40,
+  "seed_plays": 4480,
+  "catalog_tracks": 24,
+  "recommendations_per_listener": 6,
+  "distinct_listener_recommendations": true,
+  "sql_report": "passed",
+  "audio_range": "passed",
+  "private_routes": "401 as expected"
+}

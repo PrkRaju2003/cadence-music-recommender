@@ -1,3 +1,9 @@
+// Confirmation completes in Supabase; sign in normally after returning.
+if (
+  location.hash.includes("access_token=") ||
+  location.hash.includes("refresh_token=")
+)
+  history.replaceState(null, "", location.pathname + location.search);
 const API_PREFIX = location.pathname.startsWith("/demo") ? "/demo" : "";
 const $ = (s) => document.querySelector(s);
 let appMode = "demo",
