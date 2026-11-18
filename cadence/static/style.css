@@ -1488,3 +1488,254 @@ td:first-child {
     transform: none;
   }
 }
+
+/* Account access and bounded SQL exploration. */
+.auth-gated {
+  overflow: hidden;
+}
+#auth-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--paper);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: auto;
+}
+.auth-story {
+  background: #e9ecde;
+  padding: 45px 10%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100vh;
+}
+.auth-story h1 {
+  font-size: clamp(50px, 5vw, 80px);
+  margin: 25px 0;
+  letter-spacing: -4px;
+}
+.auth-story > div > p:last-child {
+  font-size: 13px;
+  color: #727b68;
+}
+.auth-caption {
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: #727b68;
+  margin-top: 50px;
+}
+.auth-form-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 45px 12%;
+}
+#auth-form {
+  width: 100%;
+  max-width: 370px;
+}
+#auth-form h2 {
+  font-size: 30px;
+  line-height: 1.25;
+  margin: 18px 0 12px;
+}
+#auth-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+}
+.auth-tabs {
+  display: flex;
+  margin: 28px 0;
+  border-bottom: 1px solid var(--line);
+}
+.auth-tabs button {
+  padding: 14px 0;
+  margin-right: 28px;
+  color: var(--muted);
+  font-size: 12px;
+  border-bottom: 2px solid transparent;
+}
+.auth-tabs .active {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+#auth-form label {
+  font-size: 10px;
+  display: block;
+  margin-top: 18px;
+}
+#auth-form input,
+#auth-form select {
+  display: block;
+  width: 100%;
+  border: 1px solid #22291f30;
+  border-radius: 6px;
+  padding: 13px;
+  margin-top: 9px;
+  font-size: 12px;
+  background: #fdfcf7;
+  color: var(--ink);
+  max-width: none;
+}
+.auth-submit {
+  width: 100%;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 15px 20px;
+  border-radius: 6px;
+  margin-top: 26px;
+  font-size: 12px;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+}
+.auth-submit:disabled {
+  opacity: 0.6;
+}
+.auth-privacy {
+  font-size: 9px;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 22px;
+}
+#auth-message {
+  font-size: 11px;
+  margin-top: 17px;
+  color: #526444;
+  line-height: 1.7;
+}
+#account-menu {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 11px;
+}
+#account-menu button {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 9px 13px;
+  font-size: 9px;
+}
+.sql-workspace {
+  display: grid;
+  gap: 25px;
+}
+.sql-editor,
+.sql-output {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 25px;
+  background: #f0f0e8;
+  min-width: 0;
+}
+.sql-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+}
+.sql-toolbar label {
+  font-size: 9px;
+  color: var(--muted);
+}
+.sql-toolbar select {
+  display: block;
+  margin-top: 10px;
+  font-size: 11px;
+  border-radius: 6px;
+  max-width: none;
+  padding: 12px 20px 12px 10px;
+}
+.sql-editor pre {
+  margin: 25px 0;
+  padding: 23px;
+  background: #232821;
+  color: #d7ee99;
+  border-radius: 7px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.85;
+  tab-size: 2;
+}
+.sql-output .section-title {
+  margin: 0 0 20px;
+}
+.sql-table-scroll {
+  overflow: auto;
+}
+.sql-output td {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.sql-output th {
+  font-size: 8px;
+}
+.sql-output .empty {
+  padding: 20px 0;
+}
+.nav[data-view="sql"] > span {
+  font-size: 19px;
+}
+@media (max-width: 760px) {
+  .auth-story {
+    display: none;
+  }
+  #auth-screen {
+    grid-template-columns: 1fr;
+  }
+  .auth-form-wrap {
+    padding: 50px 8%;
+    min-height: 100vh;
+  }
+  #auth-form {
+    max-width: 400px;
+  }
+  #auth-form h2 {
+    font-size: 32px;
+  }
+  .nav[data-view="sql"]:after {
+    content: "SQL";
+  }
+  .sql-editor,
+  .sql-output {
+    padding: 20px;
+  }
+  .sql-editor pre {
+    font-size: 10px;
+    padding: 18px;
+  }
+  .sql-toolbar {
+    gap: 10px;
+  }
+  .sql-toolbar .button {
+    font-size: 9px;
+    padding: 12px 14px;
+    white-space: nowrap;
+  }
+  #account-menu {
+    gap: 8px;
+    font-size: 9px;
+  }
+  #account-name {
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.try-demo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 15px 20px;
+  margin-top: 14px;
+  font-size: 12px;
+  background: #e9ecde;
+}
+.try-demo:hover {
+  background: #e0e7ce;
+}

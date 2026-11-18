@@ -14,6 +14,83 @@
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
+    <section id="auth-screen" hidden aria-labelledby="auth-title">
+      <div class="auth-story">
+        <a class="brand" href="/"
+          >◖<span>cadence<span class="brand-dot">.</span></span></a
+        >
+        <div>
+          <p class="eyebrow">YOUR MUSIC. YOUR SPACE.</p>
+          <h1>A little closer<br />to your<br /><em>next favorite.</em></h1>
+          <p>
+            Find your rhythm. Save your listening journey.<br />Let your taste
+            lead the way.
+          </p>
+        </div>
+        <span class="auth-caption">PLAY / DISCOVER / REPEAT</span>
+      </div>
+      <div class="auth-form-wrap">
+        <form id="auth-form">
+          <p class="eyebrow">WELCOME TO CADENCE</p>
+          <h2 id="auth-title">Good to have you back.</h2>
+          <p id="auth-subtitle">Sign in to pick up where you left off.</p>
+          <div class="auth-tabs" role="group" aria-label="Account action">
+            <button
+              type="button"
+              class="active"
+              data-auth-mode="login"
+              aria-pressed="true"
+            >
+              Sign in</button
+            ><button type="button" data-auth-mode="signup" aria-pressed="false">
+              Create account
+            </button>
+          </div>
+          <label id="name-field" hidden
+            >Your name<input
+              id="auth-name"
+              name="display_name"
+              maxlength="80"
+              autocomplete="name" /></label
+          ><label
+            >Email address<input
+              id="auth-email"
+              name="email"
+              type="email"
+              required
+              autocomplete="email"
+              maxlength="254"
+              placeholder="you@example.com" /></label
+          ><label
+            >Password<input
+              id="auth-password"
+              name="password"
+              type="password"
+              required
+              minlength="8"
+              maxlength="128"
+              autocomplete="current-password"
+              placeholder="At least 8 characters" /></label
+          ><label id="favorite-field" hidden
+            >Your favorite sound<select id="auth-genre">
+              <option value="1">Electronic</option>
+              <option value="2">Jazz</option>
+              <option value="3">Indie</option>
+              <option value="4">Ambient</option>
+            </select></label
+          ><button type="submit" class="auth-submit" id="auth-submit">
+            Sign in <span>↗</span>
+          </button>
+          <p id="auth-message" role="status" aria-live="polite"></p>
+          <a href="/demo/" class="try-demo" id="try-demo"
+            >Try the interactive demo <span>↗</span></a
+          >
+          <p class="auth-privacy">
+            No account needed for the demo. Your personal history stays private.
+          </p>
+        </form>
+      </div>
+    </section>
     <aside>
       <a class="brand" href="/"
         >◖<span>cadence<span class="brand-dot">.</span></span></a
@@ -27,6 +104,7 @@
         ><button class="nav" data-view="insights">
           <span>▥</span> Listening lab
         </button>
+        <button class="nav" data-view="sql"><span>⌘</span> SQL studio</button>
       </nav>
       <div class="side-bottom">
         <span class="lab-dot"></span>
@@ -48,6 +126,10 @@
           >Listening as
           <select id="listener" aria-label="Demo listener"></select
         ></label>
+        <div id="account-menu" hidden>
+          <span id="account-name"></span
+          ><button id="sign-out">Sign out ↗</button>
+        </div>
       </header>
       <section id="discover" class="view">
         <div class="intro">
@@ -237,6 +319,44 @@
             </p>
           </div>
           <a href="/docs" target="_blank">API reference ↗</a>
+        </div>
+      </section>
+      <section id="sql" class="view" hidden>
+        <div class="page-title">
+          <p class="eyebrow">SQL STUDIO</p>
+          <h1>Listen.<br /><em>Then look closer.</em></h1>
+          <p>
+            Explore the catalog and your listening patterns<br />with clear,
+            focused SQL reports.
+          </p>
+        </div>
+        <div class="sql-workspace">
+          <article class="sql-editor">
+            <div class="sql-toolbar">
+              <label
+                >Choose a report<select
+                  id="sql-report"
+                  aria-label="SQL report"
+                ></select></label
+              ><button id="run-sql" class="button dark">Run report ↗</button>
+            </div>
+            <pre><code id="sql-preview"></code></pre>
+            <p class="fineprint">
+              Read-only reports · bound parameters · account-scoped listening
+              data
+            </p>
+          </article>
+          <article class="sql-output">
+            <div class="section-title">
+              <h2>Results</h2>
+              <span id="sql-meta" class="muted"></span>
+            </div>
+            <div id="sql-results" role="status" aria-live="polite">
+              <p class="empty">
+                Choose a report and run it to explore your data.
+              </p>
+            </div>
+          </article>
         </div>
       </section>
       <p class="demo-banner">

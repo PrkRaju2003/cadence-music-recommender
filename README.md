@@ -6,6 +6,13 @@ Built as an interview-ready engineering project: reproducible data, actual audio
 
 ![Cadence music discovery interface](docs/discover.jpg)
 
+
+## Showcase without real users
+
+The no-account demo uses **40 synthetic listeners and 4,480 seeded plays**. Visitors can switch listeners, compare recommendations, play real demo audio, run read-only SQL reports, and inspect the evaluation table. Guest actions do not change real account histories or fabricate user traction.
+
+Cloud mode also supports private Supabase accounts with email/password signup, signin, refresh, and signout. SQL data, migrations, and auth setup are documented in [Supabase setup](docs/supabase.md).
+
 ## What it does
 
 - **Play and discover:** 24 original generated audio sketches, range-capable audio responses, searchable catalog, genre filters, album queues, and listener switching.
@@ -40,7 +47,7 @@ Open [the app](http://127.0.0.1:8000) or [interactive API docs](http://127.0.0.1
 docker compose up --build
 ```
 
-This binds the app to `127.0.0.1:8000` and persists SQLite/audio in a named volume. The Dockerfile initializes data, runs a health check, and serves FastAPI with a non-root user. It can be used on a container host with a persistent disk and `PORT` configured. The repository does not claim a public hosted backend; see the deployment boundaries in [architecture](docs/architecture.md).
+This binds the app to `127.0.0.1:8000` and persists SQLite/audio in a named volume. The Dockerfile initializes data, runs a health check, and serves FastAPI with a non-root user. It can be used on a container host with a persistent disk and `PORT` configured. See the current hosting instructions and deployment boundaries in [architecture](docs/architecture.md).
 
 ## Recommender design
 
@@ -74,6 +81,10 @@ Training cutoff: **October 22, 2026 (UTC)**. Target: the first positive play aft
 These are measured **synthetic-data results**, not real-user accuracy or production uplift. Hybrid ties collaborative filtering on hit rate while improving ranking position on this small benchmark. No held-out future interactions are used to train similarities or transitions. Full results: [evaluation.json](docs/evaluation.json).
 
 The query-plan script compares indexed and unindexed reads on a disposable database copy. It records the actual SQLite planner output and local timings; see [query-plan.txt](docs/query-plan.txt). It does not claim production throughput.
+
+## Supabase account mode
+
+Copy `.env.example` to `.env` and configure the project URL and publishable key. No service-role key or database password belongs in the application. See [SQL, authentication, and hosting](docs/supabase.md).
 
 ## API examples
 
@@ -124,6 +135,6 @@ docs/                 Architecture, measured evaluation, query plans, screenshot
 
 ## Design decisions and limits
 
-This is a single-node portfolio demo. Selectable listener IDs are not authentication. The API must not be exposed unchanged to untrusted traffic. The in-memory similarity model is refit per request; production-scale serving would require offline sparse training, candidate retrieval, caching, artifact versioning, and a persistent service database. There is no billing, DRM, commercial catalog ingestion, distributed training, or production deployment claim.
+This is a single-node portfolio demo. In offline SQLite mode, selectable listener IDs are not authentication. Supabase mode has authenticated, owner-scoped histories and a separate synthetic public showcase. Host the configured Supabase mode for account access; the unauthenticated SQLite sandbox is intended for local use. The in-memory similarity model is refit per request; production-scale serving would require offline sparse training, candidate retrieval, caching, artifact versioning, and a persistent service database. There is no billing, DRM, commercial catalog ingestion, or distributed training.
 
 See [architecture and ER diagram](docs/architecture.md), [resume-ready wording](docs/resume.md), and [Power BI instructions](powerbi/README.md). The code and original demo audio generator are MIT licensed. Google Fonts are loaded as optional presentation assets; system fonts are used when offline.

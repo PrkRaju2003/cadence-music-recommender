@@ -5,6 +5,15 @@ from pathlib import Path
 from .db import ROOT, database
 from .evaluate import evaluate
 
+CSV_FIELDS = {
+    'Playback':['event_id','user_id','session_id','track_id','played_at','play_date','played_ms','duration_ms','completion','skipped','source'],
+    'Tracks':['track_id','title','album_id','album','artist','genre','duration_ms'],
+    'Users':['user_id','listener'],
+    'RecommendationRequests':['request_id','user_id','requested_at','model_version','strategy','latency_ms'],
+    'RecommendationItems':['request_id','track_id','rank','score'],
+    'ModelEvaluation':['strategy','k','users','hit_rate','ndcg','mrr','catalog_coverage'],
+}
+
 
 def write_csv(path, rows, fields):
     with path.open('w', newline='') as stream:

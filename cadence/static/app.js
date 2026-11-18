@@ -1,4 +1,9 @@
+const API_PREFIX = location.pathname.startsWith("/demo") ? "/demo" : "";
 const $ = (s) => document.querySelector(s);
+let appMode = "demo",
+  authMode = "login",
+  refreshPromise = null,
+  sqlReports = [];
 let user = 1,
   session = null,
   tracks = [],
@@ -27,10 +32,28 @@ function toast(message) {
   toastTimer = setTimeout(() => ($("#toast").hidden = true), 4500);
 }
 async function api(path, options = {}) {
-  const r = await fetch("/api" + path, {
+  const r = await fetch(API_PREFIX + "/api" + path, {
     ...options,
     headers: { "Content-Type": "application/json", ...options.headers },
   });
+  if (
+    r.status === 401 &&
+    appMode === "supabase" &&
+    !path.startsWith("/auth/") &&
+    !options._retried
+  ) {
+    try {
+      if (!refreshPromise)
+        refreshPromise = post("/auth/refresh", {}).finally(() => {
+          refreshPromise = null;
+        });
+      await refreshPromise;
+      return api(path, { ...options, _retried: true });
+    } catch (error) {
+      gate(true);
+      throw error;
+    }
+  }
   if (!r.ok) {
     const e = await r.json().catch(() => ({}));
     throw new Error(
@@ -58,9 +81,11 @@ function showView(view) {
     discover: "MADE FOR YOU",
     library: "THE CATALOG",
     insights: "LISTENING LAB",
+    sql: "SQL STUDIO",
   }[view];
   window.scrollTo({ top: 0, behavior: "instant" });
   if (view === "insights") loadInsights().catch((e) => toast(e.message));
+  if (view === "sql") loadSqlReports().catch((e) => toast(e.message));
 }
 document
   .querySelectorAll("[data-view]")
@@ -180,7 +205,7 @@ async function play(id, origin = "catalog", ids = tracks.map((t) => t.id)) {
     queue = ids;
     heard = 0;
     lastTime = 0;
-    audio.src = `/media/${id}`;
+    audio.src = `${API_PREFIX}/media/${id}`;
     $("#now-title").textContent = current.title;
     $("#now-artist").textContent = `${current.artist} · ${current.album}`;
     $("#player-art").style.background = current.color;
@@ -265,7 +290,15 @@ async function loadInsights() {
   ]);
   const t = data.totals;
   $("#kpis").innerHTML = [
-    ["TOTAL PLAYS", t.plays.toLocaleString(), "Synthetic seed + demo events"],
+    [
+      "TOTAL PLAYS",
+      t.plays.toLocaleString(),
+      appMode === "supabase"
+        ? "Your private listening activity"
+        : appMode === "showcase"
+          ? "Fixed synthetic showcase data"
+          : "Synthetic seed + demo events",
+    ],
     [
       "LISTENING MINUTES",
       Number(t.listening_minutes || 0).toLocaleString(),
@@ -310,7 +343,7 @@ $("#refresh-insights").addEventListener("click", () =>
   loadInsights().catch((e) => toast(e.message)),
 );
 // Keep initialization explicit so failure states are visible rather than silently empty.
-async function start() {
+async function loadApp() {
   try {
     const [catalog, users, genres] = await Promise.all([
       api("/catalog"),
@@ -326,6 +359,7 @@ async function start() {
         (u) => `<option value="${u.id}">${escapeHtml(u.display_name)}</option>`,
       )
       .join("");
+    $("#genre-filter").innerHTML = '<option value="">All genres</option>';
     genres.forEach((g) => {
       const option = document.createElement("option");
       option.value = g.name;
@@ -340,7 +374,6 @@ async function start() {
       '<p class="empty">Could not load your mix. Check the API and seed data, then refresh.</p>';
   }
 }
-start();
 
 window.addEventListener("pagehide", () => {
   if (!current || !session || heard < 0.15) return;
@@ -352,8 +385,166 @@ window.addEventListener("pagehide", () => {
     event_key: crypto.randomUUID(),
   };
   navigator.sendBeacon(
-    "/api/playback",
+    API_PREFIX + "/api/playback",
     new Blob([JSON.stringify(payload)], { type: "application/json" }),
   );
   heard = 0;
 });
+
+function gate(show) {
+  $("#auth-screen").hidden = !show;
+  document
+    .querySelectorAll("aside,main,.player")
+    .forEach((el) => (el.inert = show));
+  document.body.classList.toggle("auth-gated", show);
+}
+function setAuthMode(mode) {
+  authMode = mode;
+  document.querySelectorAll("[data-auth-mode]").forEach((b) => {
+    const on = b.dataset.authMode === mode;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-pressed", String(on));
+  });
+  $("#name-field").hidden = mode !== "signup";
+  $("#favorite-field").hidden = mode !== "signup";
+  $("#auth-name").required = mode === "signup";
+  $("#auth-password").autocomplete =
+    mode === "signup" ? "new-password" : "current-password";
+  $("#auth-title").textContent =
+    mode === "signup" ? "Find your own rhythm." : "Good to have you back.";
+  $("#auth-subtitle").textContent =
+    mode === "signup"
+      ? "Create a space for your listening journey."
+      : "Sign in to pick up where you left off.";
+  $("#auth-submit").textContent =
+    mode === "signup" ? "Create account ↗" : "Sign in ↗";
+  $("#auth-message").textContent = "";
+}
+document
+  .querySelectorAll("[data-auth-mode]")
+  .forEach((b) =>
+    b.addEventListener("click", () => setAuthMode(b.dataset.authMode)),
+  );
+async function signedIn() {
+  let account;
+  try {
+    account = await api("/auth/session");
+  } catch (error) {
+    try {
+      await post("/auth/refresh", {});
+      account = await api("/auth/session");
+    } catch {
+      gate(true);
+      return;
+    }
+  }
+  $("#account-name").textContent = account.user.display_name;
+  $("#account-menu").hidden = false;
+  $(".listener-label").hidden = true;
+  const banner = $(".demo-banner");
+  banner.innerHTML =
+    'Original demo audio. Your listening activity is saved privately to your account. <a href="/docs" target="_blank">API reference ↗</a>';
+  $("#insights .page-title .fineprint").textContent =
+    "Only your account’s listening activity is shown here. Offline evaluation uses synthetic seed data.";
+  const exportLink = $("#insights .bi-note>a");
+  exportLink.href = "/api/export";
+  exportLink.textContent = "Download my CSVs ↗";
+  exportLink.removeAttribute("target");
+  gate(false);
+  await loadApp();
+}
+$("#auth-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = $("#auth-submit");
+  button.disabled = true;
+  $("#auth-message").textContent = "";
+  const body = {
+    email: $("#auth-email").value.trim(),
+    password: $("#auth-password").value,
+  };
+  if (authMode === "signup")
+    Object.assign(body, {
+      display_name: $("#auth-name").value.trim(),
+      genre_id: Number($("#auth-genre").value),
+    });
+  try {
+    const result = await post("/auth/" + authMode, body);
+    $("#auth-password").value = "";
+    if (result.signed_in) await signedIn();
+    else {
+      setAuthMode("login");
+      $("#auth-message").textContent = result.message;
+    }
+  } catch (error) {
+    $("#auth-message").textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+$("#sign-out").addEventListener("click", async () => {
+  try {
+    audio.pause();
+    await flush();
+    await post("/auth/logout", {});
+    session = null;
+    current = null;
+    audio.removeAttribute("src");
+    $("#recommendation-grid").innerHTML = "";
+    $("#sql-results").innerHTML = "";
+    $("#kpis").innerHTML = "";
+    $("#account-menu").hidden = true;
+    gate(true);
+    setAuthMode("login");
+  } catch (error) {
+    toast(error.message);
+  }
+});
+async function loadSqlReports() {
+  if (!sqlReports.length) {
+    sqlReports = await api("/sql/queries");
+    $("#sql-report").innerHTML = sqlReports
+      .map((r) => `<option value="${r.id}">${escapeHtml(r.name)}</option>`)
+      .join("");
+  }
+  updateSqlPreview();
+}
+function updateSqlPreview() {
+  const report = sqlReports.find((r) => r.id === $("#sql-report").value);
+  if (report) $("#sql-preview").textContent = report.sql;
+}
+$("#sql-report").addEventListener("change", updateSqlPreview);
+$("#run-sql").addEventListener("click", async () => {
+  const button = $("#run-sql");
+  button.disabled = true;
+  try {
+    const result = await post("/sql/run", {
+      report_id: $("#sql-report").value,
+      limit: 20,
+      ...(appMode === "showcase" ? { user_id: user } : {}),
+    });
+    $("#sql-meta").textContent =
+      `${result.row_count} rows · ${result.database}`;
+    $("#sql-results").innerHTML = result.rows.length
+      ? `<div class="sql-table-scroll"><table><thead><tr>${result.columns.map((c) => `<th>${escapeHtml(c)}</th>`).join("")}</tr></thead><tbody>${result.rows.map((row) => `<tr>${result.columns.map((c) => `<td>${escapeHtml(row[c] ?? "")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`
+      : '<p class="empty">No listening activity yet. Play a track, then try this report again.</p>';
+  } catch (error) {
+    toast(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+async function start() {
+  try {
+    const config = await api("/config");
+    appMode = config.mode;
+    if (appMode === "showcase") {
+      $(".demo-banner").innerHTML =
+        'Interactive demo · 40 synthetic listeners · guest playback is not saved. <a href="/">Create an account to save your journey ↗</a>';
+    }
+    if (config.auth_required) await signedIn();
+    else await loadApp();
+  } catch (error) {
+    toast(error.message);
+  }
+}
+start();

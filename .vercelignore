@@ -1,0 +1,12 @@
+.venv/
+.cache/
+.git/
+.pytest_cache/
+data/
+exports/
+supabase/
+tests/
+docs/*
+!docs/evaluation.json
+.env
+.env.*

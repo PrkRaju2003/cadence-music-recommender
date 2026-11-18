@@ -6,6 +6,7 @@ __pycache__
 data
 .env
 tests
-docs
+docs/*
+!docs/evaluation.json
 powerbi
 exports

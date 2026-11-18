@@ -5,6 +5,7 @@ RUN pip install --no-cache-dir -r requirements.txt \
     && useradd --create-home --uid 10001 cadence
 COPY cadence ./cadence
 COPY sql ./sql
+COPY docs/evaluation.json ./docs/evaluation.json
 RUN mkdir -p /app/data && chown -R cadence:cadence /app
 USER cadence
 ENV PORT=8000

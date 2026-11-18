@@ -39,6 +39,13 @@ class UserInput(BaseModel):
 
 
 def create_app(db_path=None):
+    if db_path is None:
+        from .supabase import settings_from_env
+        settings = settings_from_env()
+        if settings is not None:
+            from .cloud_api import create_supabase_app
+            return create_supabase_app(settings)
+
     @asynccontextmanager
     async def lifespan(app):
         with database(db_path) as connection:
@@ -53,6 +60,22 @@ def create_app(db_path=None):
             yield connection
 
     DB = Annotated[sqlite3.Connection, Depends(get_db)]
+
+    @app.get('/api/config')
+    def config():
+        return {'mode':'demo','auth_required':False,'database':'SQLite'}
+
+    from .sql_reports import REPORTS, ReportInput, local_report
+
+    @app.get('/api/sql/queries')
+    def queries():
+        return REPORTS
+
+    @app.post('/api/sql/run')
+    def sql_report(body: ReportInput, db: DB):
+        report = next(r for r in REPORTS if r['id']==body.report_id)
+        rows = local_report(db,report,body.limit)
+        return {'columns':report['columns'],'rows':rows,'row_count':len(rows),'database':'SQLite demo'}
 
     def require_user(connection, user):
         if not connection.execute('SELECT 1 FROM users WHERE id=?', (user,)).fetchone():
