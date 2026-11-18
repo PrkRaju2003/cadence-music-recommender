@@ -1,0 +1,84 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.6.0/schema.json",
+  "name": "requests",
+  "position": {
+    "x": 25,
+    "y": 440,
+    "z": 0,
+    "height": 255,
+    "width": 595,
+    "tabOrder": 4425
+  },
+  "visual": {
+    "visualType": "clusteredBarChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "RecommendationRequests"
+                    }
+                  },
+                  "Property": "strategy"
+                }
+              },
+              "queryRef": "RecommendationRequests.strategy",
+              "nativeQueryRef": "strategy"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "RecommendationRequests"
+                    }
+                  },
+                  "Property": "Recommendation Requests"
+                }
+              },
+              "queryRef": "RecommendationRequests.Recommendation Requests",
+              "nativeQueryRef": "Recommendation Requests"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Requests by ranking strategy'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "14D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

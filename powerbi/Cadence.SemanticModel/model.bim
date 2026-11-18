@@ -1,0 +1,486 @@
+{
+  "name": "Cadence",
+  "compatibilityLevel": 1601,
+  "model": {
+    "culture": "en-US",
+    "defaultPowerBIDataSourceVersion": "powerBI_V3",
+    "expressions": [
+      {
+        "name": "DataFolder",
+        "kind": "m",
+        "expression": "\"C:/cadence/exports\" meta [IsParameterQuery=true, Type=\"Text\", IsParameterQueryRequired=true]"
+      }
+    ],
+    "tables": [
+      {
+        "name": "Playback",
+        "columns": [
+          {
+            "name": "event_id",
+            "dataType": "int64",
+            "sourceColumn": "event_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "user_id",
+            "dataType": "int64",
+            "sourceColumn": "user_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "session_id",
+            "dataType": "string",
+            "sourceColumn": "session_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "track_id",
+            "dataType": "int64",
+            "sourceColumn": "track_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "played_at",
+            "dataType": "string",
+            "sourceColumn": "played_at",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "play_date",
+            "dataType": "dateTime",
+            "sourceColumn": "play_date",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "played_ms",
+            "dataType": "int64",
+            "sourceColumn": "played_ms",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "duration_ms",
+            "dataType": "int64",
+            "sourceColumn": "duration_ms",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "completion",
+            "dataType": "double",
+            "sourceColumn": "completion",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "skipped",
+            "dataType": "int64",
+            "sourceColumn": "skipped",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "source",
+            "dataType": "string",
+            "sourceColumn": "source",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "Playback",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source = Csv.Document(File.Contents(DataFolder & \"/Playback.csv\"), [Delimiter=\",\", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),",
+                "    Headers = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),",
+                "    Typed = Table.TransformColumnTypes(Headers, {{\"event_id\", Int64.Type}, {\"user_id\", Int64.Type}, {\"session_id\", type text}, {\"track_id\", Int64.Type}, {\"played_at\", type text}, {\"play_date\", type datetime}, {\"played_ms\", Int64.Type}, {\"duration_ms\", Int64.Type}, {\"completion\", type number}, {\"skipped\", Int64.Type}, {\"source\", type text}}, \"en-US\")",
+                "in",
+                "    Typed"
+              ]
+            }
+          }
+        ],
+        "measures": [
+          {
+            "name": "Total Plays",
+            "expression": "COUNTROWS(Playback)",
+            "formatString": "#,0"
+          },
+          {
+            "name": "Active Listeners",
+            "expression": "DISTINCTCOUNT(Playback[user_id])",
+            "formatString": "#,0"
+          },
+          {
+            "name": "Listening Minutes",
+            "expression": "DIVIDE(SUM(Playback[played_ms]), 60000)",
+            "formatString": "#,0.0"
+          },
+          {
+            "name": "Completion Rate",
+            "expression": "AVERAGE(Playback[completion])",
+            "formatString": "0.0%"
+          },
+          {
+            "name": "Skip Rate",
+            "expression": "AVERAGE(Playback[skipped])",
+            "formatString": "0.0%"
+          }
+        ]
+      },
+      {
+        "name": "Tracks",
+        "columns": [
+          {
+            "name": "track_id",
+            "dataType": "int64",
+            "sourceColumn": "track_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "title",
+            "dataType": "string",
+            "sourceColumn": "title",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "album_id",
+            "dataType": "int64",
+            "sourceColumn": "album_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "album",
+            "dataType": "string",
+            "sourceColumn": "album",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "artist",
+            "dataType": "string",
+            "sourceColumn": "artist",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "genre",
+            "dataType": "string",
+            "sourceColumn": "genre",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "duration_ms",
+            "dataType": "int64",
+            "sourceColumn": "duration_ms",
+            "summarizeBy": "sum"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "Tracks",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source = Csv.Document(File.Contents(DataFolder & \"/Tracks.csv\"), [Delimiter=\",\", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),",
+                "    Headers = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),",
+                "    Typed = Table.TransformColumnTypes(Headers, {{\"track_id\", Int64.Type}, {\"title\", type text}, {\"album_id\", Int64.Type}, {\"album\", type text}, {\"artist\", type text}, {\"genre\", type text}, {\"duration_ms\", Int64.Type}}, \"en-US\")",
+                "in",
+                "    Typed"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "Users",
+        "columns": [
+          {
+            "name": "user_id",
+            "dataType": "int64",
+            "sourceColumn": "user_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "listener",
+            "dataType": "string",
+            "sourceColumn": "listener",
+            "summarizeBy": "none"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "Users",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source = Csv.Document(File.Contents(DataFolder & \"/Users.csv\"), [Delimiter=\",\", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),",
+                "    Headers = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),",
+                "    Typed = Table.TransformColumnTypes(Headers, {{\"user_id\", Int64.Type}, {\"listener\", type text}}, \"en-US\")",
+                "in",
+                "    Typed"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "RecommendationRequests",
+        "columns": [
+          {
+            "name": "request_id",
+            "dataType": "string",
+            "sourceColumn": "request_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "user_id",
+            "dataType": "int64",
+            "sourceColumn": "user_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "requested_at",
+            "dataType": "string",
+            "sourceColumn": "requested_at",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "model_version",
+            "dataType": "string",
+            "sourceColumn": "model_version",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "strategy",
+            "dataType": "string",
+            "sourceColumn": "strategy",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "latency_ms",
+            "dataType": "double",
+            "sourceColumn": "latency_ms",
+            "summarizeBy": "sum"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "RecommendationRequests",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source = Csv.Document(File.Contents(DataFolder & \"/RecommendationRequests.csv\"), [Delimiter=\",\", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),",
+                "    Headers = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),",
+                "    Typed = Table.TransformColumnTypes(Headers, {{\"request_id\", type text}, {\"user_id\", Int64.Type}, {\"requested_at\", type text}, {\"model_version\", type text}, {\"strategy\", type text}, {\"latency_ms\", type number}}, \"en-US\")",
+                "in",
+                "    Typed"
+              ]
+            }
+          }
+        ],
+        "measures": [
+          {
+            "name": "Recommendation Requests",
+            "expression": "COUNTROWS(RecommendationRequests)",
+            "formatString": "#,0"
+          },
+          {
+            "name": "Average Latency ms",
+            "expression": "AVERAGE(RecommendationRequests[latency_ms])",
+            "formatString": "0.0"
+          }
+        ]
+      },
+      {
+        "name": "RecommendationItems",
+        "columns": [
+          {
+            "name": "request_id",
+            "dataType": "string",
+            "sourceColumn": "request_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "track_id",
+            "dataType": "int64",
+            "sourceColumn": "track_id",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "rank",
+            "dataType": "int64",
+            "sourceColumn": "rank",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "score",
+            "dataType": "double",
+            "sourceColumn": "score",
+            "summarizeBy": "sum"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "RecommendationItems",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source = Csv.Document(File.Contents(DataFolder & \"/RecommendationItems.csv\"), [Delimiter=\",\", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),",
+                "    Headers = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),",
+                "    Typed = Table.TransformColumnTypes(Headers, {{\"request_id\", type text}, {\"track_id\", Int64.Type}, {\"rank\", Int64.Type}, {\"score\", type number}}, \"en-US\")",
+                "in",
+                "    Typed"
+              ]
+            }
+          }
+        ],
+        "measures": [
+          {
+            "name": "Exposed Tracks",
+            "expression": "DISTINCTCOUNT(RecommendationItems[track_id])",
+            "formatString": "#,0"
+          },
+          {
+            "name": "Average Recommendation Score",
+            "expression": "AVERAGE(RecommendationItems[score])",
+            "formatString": "0.000"
+          }
+        ]
+      },
+      {
+        "name": "ModelEvaluation",
+        "columns": [
+          {
+            "name": "strategy",
+            "dataType": "string",
+            "sourceColumn": "strategy",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "k",
+            "dataType": "int64",
+            "sourceColumn": "k",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "users",
+            "dataType": "int64",
+            "sourceColumn": "users",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "hit_rate",
+            "dataType": "double",
+            "sourceColumn": "hit_rate",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "ndcg",
+            "dataType": "double",
+            "sourceColumn": "ndcg",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "mrr",
+            "dataType": "double",
+            "sourceColumn": "mrr",
+            "summarizeBy": "sum"
+          },
+          {
+            "name": "catalog_coverage",
+            "dataType": "double",
+            "sourceColumn": "catalog_coverage",
+            "summarizeBy": "sum"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "ModelEvaluation",
+            "mode": "import",
+            "source": {
+              "type": "m",
+              "expression": [
+                "let",
+                "    Source = Csv.Document(File.Contents(DataFolder & \"/ModelEvaluation.csv\"), [Delimiter=\",\", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),",
+                "    Headers = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),",
+                "    Typed = Table.TransformColumnTypes(Headers, {{\"strategy\", type text}, {\"k\", Int64.Type}, {\"users\", Int64.Type}, {\"hit_rate\", type number}, {\"ndcg\", type number}, {\"mrr\", type number}, {\"catalog_coverage\", type number}}, \"en-US\")",
+                "in",
+                "    Typed"
+              ]
+            }
+          }
+        ],
+        "measures": [
+          {
+            "name": "Hit Rate at 5",
+            "expression": "AVERAGE(ModelEvaluation[hit_rate])",
+            "formatString": "0.0%"
+          },
+          {
+            "name": "NDCG at 5",
+            "expression": "AVERAGE(ModelEvaluation[ndcg])",
+            "formatString": "0.000"
+          },
+          {
+            "name": "MRR at 5",
+            "expression": "AVERAGE(ModelEvaluation[mrr])",
+            "formatString": "0.000"
+          },
+          {
+            "name": "Catalog Coverage at 5",
+            "expression": "AVERAGE(ModelEvaluation[catalog_coverage])",
+            "formatString": "0.0%"
+          }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "name": "Playback_user_id_Users",
+        "fromTable": "Playback",
+        "fromColumn": "user_id",
+        "toTable": "Users",
+        "toColumn": "user_id",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "Playback_track_id_Tracks",
+        "fromTable": "Playback",
+        "fromColumn": "track_id",
+        "toTable": "Tracks",
+        "toColumn": "track_id",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "RecommendationRequests_user_id_Users",
+        "fromTable": "RecommendationRequests",
+        "fromColumn": "user_id",
+        "toTable": "Users",
+        "toColumn": "user_id",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "RecommendationItems_request_id_RecommendationRequests",
+        "fromTable": "RecommendationItems",
+        "fromColumn": "request_id",
+        "toTable": "RecommendationRequests",
+        "toColumn": "request_id",
+        "crossFilteringBehavior": "oneDirection"
+      },
+      {
+        "name": "RecommendationItems_track_id_Tracks",
+        "fromTable": "RecommendationItems",
+        "fromColumn": "track_id",
+        "toTable": "Tracks",
+        "toColumn": "track_id",
+        "crossFilteringBehavior": "oneDirection"
+      }
+    ]
+  }
+}

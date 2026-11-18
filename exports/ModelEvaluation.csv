@@ -1,0 +1,5 @@
+strategy,k,users,hit_rate,ndcg,mrr,catalog_coverage
+popularity,5,40,0.175,0.0941,0.0683,0.25
+collaborative,5,40,0.875,0.4872,0.3604,1.0
+sequence,5,40,0.675,0.4214,0.3387,1.0
+hybrid,5,40,0.875,0.5485,0.4433,1.0

@@ -1,0 +1,6 @@
+request_id,user_id,requested_at,model_version,strategy,latency_ms
+5f07b07f-ab0b-4a36-be36-53086131b5d7,1,2026-11-18T18:55:47.405932+00:00,itemcf-markov-v1,hybrid,50.113
+f3d4619a-e98a-4fb2-aeda-dcc619a63334,1,2026-11-18T18:55:47.405956+00:00,itemcf-markov-v1,hybrid,50.29
+1ca960e5-a63f-48f7-a449-b00474cb6a5f,1,2026-11-18T18:59:53.573254+00:00,itemcf-markov-v1,hybrid,62.859
+9657d0e6-fc4a-43f3-afdf-45420bdd2f86,1,2026-11-18T18:59:53.583112+00:00,itemcf-markov-v1,hybrid,73.083
+74e573c4-28ae-49ca-9b6a-62d178c42ce5,1,2026-11-18T19:00:12.721522+00:00,itemcf-markov-v1,hybrid,14.792

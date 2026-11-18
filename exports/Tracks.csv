@@ -1,0 +1,25 @@
+track_id,title,album_id,album,artist,genre,duration_ms
+1,Night Drive,1,After Hours,Soft Circuit,Electronic,12000
+2,Signal Bloom,1,After Hours,Soft Circuit,Electronic,12000
+3,Last Train,1,After Hours,Soft Circuit,Electronic,12000
+4,First Light,2,Slow Sundays,Mira Vale,Jazz,12000
+5,Paper Cup,2,Slow Sundays,Mira Vale,Jazz,12000
+6,Blue Window,2,Slow Sundays,Mira Vale,Jazz,12000
+7,Long Way Home,3,Open Roads,Northbound,Indie,12000
+8,Wildflowers,3,Open Roads,Northbound,Indie,12000
+9,Golden Mile,3,Open Roads,Northbound,Indie,12000
+10,Drift,4,Still Water,Low Tide,Ambient,12000
+11,Tidal Memory,4,Still Water,Low Tide,Ambient,12000
+12,Quiet Shore,4,Still Water,Low Tide,Ambient,12000
+13,Arcade Hearts,5,Neon Sketches,Pixel Atlas,Electronic,12000
+14,Soft Reset,5,Neon Sketches,Pixel Atlas,Electronic,12000
+15,Electric Rain,5,Neon Sketches,Pixel Atlas,Electronic,12000
+16,Side Street,6,Room for Three,Juniper Trio,Jazz,12000
+17,Amber Notes,6,Room for Three,Juniper Trio,Jazz,12000
+18,Midnight Table,6,Room for Three,Juniper Trio,Jazz,12000
+19,Satellite,7,Little Universes,The Folds,Indie,12000
+20,Almost Summer,7,Little Universes,The Folds,Indie,12000
+21,Small Worlds,7,Little Universes,The Folds,Indie,12000
+22,Moss,8,A Place to Pause,Oren Fields,Ambient,12000
+23,Faraway,8,A Place to Pause,Oren Fields,Ambient,12000
+24,Breathe Again,8,A Place to Pause,Oren Fields,Ambient,12000

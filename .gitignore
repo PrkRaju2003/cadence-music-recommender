@@ -1,0 +1,14 @@
+.venv/
+.cache/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.DS_Store
+.env
+.env.*
+data/*
+!data/.gitkeep
+powerbi/**/.pbi/
+powerbi/**/cache.abf
+.coverage
+htmlcov/

@@ -1,0 +1,108 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.6.0/schema.json",
+  "name": "artists",
+  "position": {
+    "x": 25,
+    "y": 505,
+    "z": 0,
+    "height": 190,
+    "width": 1230,
+    "tabOrder": 5075
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Tracks"
+                    }
+                  },
+                  "Property": "artist"
+                }
+              },
+              "queryRef": "Tracks.artist",
+              "nativeQueryRef": "artist"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Playback"
+                    }
+                  },
+                  "Property": "Total Plays"
+                }
+              },
+              "queryRef": "Playback.Total Plays",
+              "nativeQueryRef": "Total Plays"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Playback"
+                    }
+                  },
+                  "Property": "Listening Minutes"
+                }
+              },
+              "queryRef": "Playback.Listening Minutes",
+              "nativeQueryRef": "Listening Minutes"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Playback"
+                    }
+                  },
+                  "Property": "Completion Rate"
+                }
+              },
+              "queryRef": "Playback.Completion Rate",
+              "nativeQueryRef": "Completion Rate"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Artist engagement'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "14D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

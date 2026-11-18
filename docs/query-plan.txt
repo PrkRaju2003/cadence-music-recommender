@@ -1,0 +1,19 @@
+Recent listener history query
+SELECT e.track_id,e.played_at FROM listening_sessions s
+JOIN playback_events e ON e.session_id=s.id WHERE s.user_id=?
+ORDER BY e.played_at DESC LIMIT 20
+
+WITH INDEXES:
+SEARCH s USING INDEX idx_sessions_user_time (user_id=?)
+SEARCH e USING INDEX idx_playback_session_time (session_id=?)
+USE TEMP B-TREE FOR ORDER BY
+Median of 100 local reads: 0.0209 ms
+
+WITHOUT EXPLICIT INDEXES:
+SCAN e
+SEARCH s USING COVERING INDEX sqlite_autoindex_listening_sessions_2 (id=? AND user_id=?)
+USE TEMP B-TREE FOR ORDER BY
+Median of 100 local reads: 0.6471 ms
+
+Small 4,480-event synthetic dataset. Cache effects and hardware affect timings;
+these numbers do not establish production throughput or a universal speedup.

@@ -1,0 +1,122 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.6.0/schema.json",
+  "name": "baselines",
+  "position": {
+    "x": 25,
+    "y": 180,
+    "z": 0,
+    "height": 230,
+    "width": 1230,
+    "tabOrder": 1825
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ModelEvaluation"
+                    }
+                  },
+                  "Property": "strategy"
+                }
+              },
+              "queryRef": "ModelEvaluation.strategy",
+              "nativeQueryRef": "strategy"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ModelEvaluation"
+                    }
+                  },
+                  "Property": "Hit Rate at 5"
+                }
+              },
+              "queryRef": "ModelEvaluation.Hit Rate at 5",
+              "nativeQueryRef": "Hit Rate at 5"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ModelEvaluation"
+                    }
+                  },
+                  "Property": "NDCG at 5"
+                }
+              },
+              "queryRef": "ModelEvaluation.NDCG at 5",
+              "nativeQueryRef": "NDCG at 5"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ModelEvaluation"
+                    }
+                  },
+                  "Property": "MRR at 5"
+                }
+              },
+              "queryRef": "ModelEvaluation.MRR at 5",
+              "nativeQueryRef": "MRR at 5"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "ModelEvaluation"
+                    }
+                  },
+                  "Property": "Catalog Coverage at 5"
+                }
+              },
+              "queryRef": "ModelEvaluation.Catalog Coverage at 5",
+              "nativeQueryRef": "Catalog Coverage at 5"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Temporal holdout \u00b7 K=5 \u00b7 40 synthetic listeners'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "14D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
