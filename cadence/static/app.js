@@ -1,9 +1,15 @@
-// Confirmation completes in Supabase; sign in normally after returning.
-if (
-  location.hash.includes("access_token=") ||
-  location.hash.includes("refresh_token=")
-)
+// Supabase places email-link results in the fragment. Remove it before rendering.
+const emailLinkResult = (() => {
+  const params = new URLSearchParams(location.hash.slice(1));
+  const token = params.get("access_token");
+  if (!token && !params.has("refresh_token") && !params.has("error_code") && !params.has("error"))
+    return null;
   history.replaceState(null, "", location.pathname + location.search);
+  if (params.has("error") || params.has("error_code")) return { type: "invalid" };
+  if (token && params.get("type") === "signup") return { type: "verified" };
+  if (token && params.get("type") === "recovery") return { type: "recovery", token };
+  return null;
+})();
 const API_PREFIX = location.pathname.startsWith("/demo") ? "/demo" : "";
 const $ = (s) => document.querySelector(s);
 let appMode = "demo",
@@ -67,9 +73,13 @@ async function api(path, options = {}) {
   }
   if (!r.ok) {
     const e = await r.json().catch(() => ({}));
-    throw new Error(
-      typeof e.detail === "string" ? e.detail : `Request failed (${r.status})`,
+    const error = new Error(
+      (typeof e.detail === "string" ? e.detail : e.detail?.message) ||
+        `Request failed (${r.status})`,
     );
+    error.code = e.detail?.code;
+    error.status = r.status;
+    throw error;
   }
   return r.json();
 }
@@ -501,43 +511,70 @@ function gate(show) {
     .forEach((el) => (el.inert = show));
   document.body.classList.toggle("auth-gated", show);
 }
-function setAuthMode(mode) {
+const authCopy = {
+  login: ["Good to have you back.", "Sign in to pick up where you left off.", "Sign in"],
+  signup: ["Create your account", "Verify your email before signing in for the first time.", "Create account"],
+  verify: ["Verify your email", "Open the verification link in your inbox, then sign in.", "Continue to sign in"],
+  resend: ["Resend verification email", "Enter the email address you used to create your account.", "Send verification email"],
+  recover: ["Reset your password", "We’ll send a link to the email address on your account.", "Send reset link"],
+  password: ["Choose a new password", "Use at least 8 characters. You’ll sign in after saving it.", "Save new password"],
+};
+
+function setAuthMode(mode, message = "", focus = false) {
   authMode = mode;
-  document.querySelectorAll("[data-auth-mode]").forEach((b) => {
+  if (mode !== "password" && emailLinkResult?.type === "recovery")
+    emailLinkResult.token = null;
+  const credentials = mode === "login" || mode === "signup";
+  $(".auth-tabs").hidden = !credentials;
+  document.querySelectorAll(".auth-tabs button").forEach((b) => {
     const on = b.dataset.authMode === mode;
     b.classList.toggle("active", on);
     b.setAttribute("aria-pressed", String(on));
   });
+  $(".auth-actions [data-auth-mode='resend']").hidden = mode !== "login" && mode !== "verify";
+  $(".auth-actions [data-auth-mode='recover']").hidden = mode !== "login";
+  $(".auth-actions [data-auth-mode='login']").hidden = credentials || mode === "verify";
   $("#name-field").hidden = mode !== "signup";
   $("#favorite-field").hidden = mode !== "signup";
   $("#auth-name").required = mode === "signup";
-  $("#auth-password").autocomplete =
-    mode === "signup" ? "new-password" : "current-password";
-  $("#auth-title").textContent =
-    mode === "signup" ? "Find your own rhythm." : "Good to have you back.";
-  $("#auth-subtitle").textContent =
-    mode === "signup"
-      ? "Create a space for your listening journey."
-      : "Sign in to pick up where you left off.";
-  $("#auth-submit").textContent =
-    mode === "signup" ? "Create account ↗" : "Sign in ↗";
-  $("#auth-message").textContent = "";
+  const email = $("#auth-email"), password = $("#auth-password");
+  email.required = mode !== "verify" && mode !== "password";
+  email.disabled = !email.required;
+  $("#email-field").hidden = !email.required;
+  password.required = credentials || mode === "password";
+  password.disabled = !password.required;
+  $("#password-field").hidden = !password.required;
+  $("#password-label").textContent = mode === "password" ? "New password" : "Password";
+  password.autocomplete = mode === "login" ? "current-password" : "new-password";
+  password.minLength = mode === "login" ? 1 : 8;
+  password.value = "";
+  const [title, subtitle, button] = authCopy[mode];
+  $("#auth-title").textContent = title;
+  $("#auth-subtitle").textContent = subtitle;
+  $("#auth-submit").textContent = `${button} ↗`;
+  $("#auth-message").textContent = message;
+  if (focus) $("#auth-title").focus();
 }
 document
   .querySelectorAll("[data-auth-mode]")
   .forEach((b) =>
-    b.addEventListener("click", () => setAuthMode(b.dataset.authMode)),
+    b.addEventListener("click", () => {
+      if (!$("#auth-submit").disabled) setAuthMode(b.dataset.authMode, "", true);
+    }),
   );
-async function signedIn() {
+async function signedIn(afterLogin = false) {
   let account;
   try {
     account = await api("/auth/session");
   } catch (error) {
+    if (error.status !== 401) throw error;
     try {
       await post("/auth/refresh", {});
       account = await api("/auth/session");
-    } catch {
+    } catch (refreshError) {
       gate(true);
+      if (refreshError.status !== 401) throw refreshError;
+      if (afterLogin) throw new Error("Cadence couldn’t start your session. Please sign in again.");
       return;
     }
   }
@@ -558,28 +595,41 @@ async function signedIn() {
 }
 $("#auth-form").addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (authMode === "verify") {
+    setAuthMode("login", "After opening the link in your email, sign in below.", true);
+    return;
+  }
   const button = $("#auth-submit");
   button.disabled = true;
-  $("#auth-message").textContent = "";
-  const body = {
-    email: $("#auth-email").value.trim(),
-    password: $("#auth-password").value,
-  };
-  if (authMode === "signup")
-    Object.assign(body, {
-      display_name: $("#auth-name").value.trim(),
-      genre_id: Number($("#auth-genre").value),
-    });
+  const message = $("#auth-message");
+  message.textContent = "";
+  const email = $("#auth-email").value.trim();
+  const password = $("#auth-password").value;
   try {
-    const result = await post("/auth/" + authMode, body);
-    $("#auth-password").value = "";
-    if (result.signed_in) await signedIn();
-    else {
-      setAuthMode("login");
-      $("#auth-message").textContent = result.message;
+    if (authMode === "signup") {
+      await post("/auth/signup", {
+        email, password, display_name: $("#auth-name").value.trim(),
+        genre_id: Number($("#auth-genre").value),
+      });
+      setAuthMode("verify", `Check ${email} and your spam folder for the verification email.`, true);
+    } else if (authMode === "resend") {
+      await post("/auth/resend", { email });
+      setAuthMode("verify", "If this account still needs verification, a fresh link is on its way.", true);
+    } else if (authMode === "recover") {
+      await post("/auth/recover", { email });
+      setAuthMode("login", "If an account matches that email, a reset link is on its way.", true);
+    } else if (authMode === "password") {
+      await post("/auth/password", { password, recovery_token: emailLinkResult.token });
+      setAuthMode("login", "Password updated. Sign in with your new password.", true);
+    } else {
+      await post("/auth/login", { email, password });
+      await signedIn(true);
+      $("#auth-password").value = "";
     }
   } catch (error) {
-    $("#auth-message").textContent = error.message;
+    if (error.code === "email_not_confirmed") setAuthMode("verify", error.message, true);
+    else if (error.code === "recovery_expired") setAuthMode("recover", error.message, true);
+    else message.textContent = error.message;
   } finally {
     button.disabled = false;
   }
@@ -646,10 +696,19 @@ async function start() {
       $(".demo-banner").innerHTML =
         'Live demo · sample data + your plays in this tab · refreshes every 5s. Guest activity resets on reload; SQL reports use sample data. <a href="/">Create an account to save your journey ↗</a>';
     }
-    if (config.auth_required) await signedIn();
-    else await loadApp();
+    if (!config.auth_required) await loadApp();
+    else if (emailLinkResult) {
+      gate(true);
+      if (emailLinkResult.type === "recovery") setAuthMode("password", "", true);
+      else if (emailLinkResult.type === "verified") setAuthMode("login", "Email verified. You can sign in now.", true);
+      else setAuthMode("login", "This email link has expired or was already used. Sign in if you’ve verified your email, or request a fresh link.", true);
+    } else {
+      gate(true);
+      await signedIn();
+    }
   } catch (error) {
-    toast(error.message);
+    if (appMode === "supabase") $("#auth-message").textContent = error.message;
+    else toast(error.message);
   }
 }
 start();

@@ -35,7 +35,11 @@ The live project has the migrations and seed applied. New projects can use the S
 
 ## Email confirmation and public signup
 
-Keep email confirmation enabled. Set the project Site URL to the hosted application URL and add exact local development URLs to the redirect allowlist. Email confirmation does not automatically create a browser session in Cadence: return to the app and sign in after confirming.
+Keep email confirmation enabled. Set the project Site URL to `https://cadence-prk.vercel.app/` for production, or the local app URL on a separate development project. The **Confirm signup** and **Reset password** templates use Supabase's `{{ .ConfirmationURL }}` link so the result returns to the Cadence sign-in page.
+
+After signup, Cadence guides the listener to verify their email. An unverified account is blocked by Supabase Auth. After the link is accepted, Cadence shows the verification result and asks the listener to sign in with their password. The sign-in page can also resend verification or request a password reset. After saving a new password, the user signs in again.
+
+In the **Cadence** Supabase project, open **Authentication → Users** for login identities (`auth.users`) and their confirmation status. In **Table Editor**, select the `cadence` schema and open `users` for listener profiles. A private profile has an `auth_id` linking it to the account. Rows with `is_demo = true` are synthetic demo listeners. Private listening activity is stored under the same schema.
 
 Supabase's default SMTP sends only to organization/team addresses. Configure a custom SMTP provider before inviting arbitrary recruiters/users to create accounts; the no-account demo works without SMTP. [Official SMTP documentation](https://supabase.com/docs/guides/auth/auth-smtp).
 

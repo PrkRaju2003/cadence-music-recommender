@@ -37,6 +37,12 @@ def settings_from_env():
     return SupabaseSettings(url, key, os.environ.get('COOKIE_SECURE') == '1')
 
 
+class SupabaseAuthError(HTTPException):
+    def __init__(self, status, message, code, headers=None):
+        super().__init__(status, message, headers)
+        self.code = code
+
+
 class SupabaseGateway:
     def __init__(self, settings, transport=None):
         self.settings = settings
@@ -63,7 +69,10 @@ class SupabaseGateway:
             message = (error.get('msg') or error.get('message') or 'Account request failed') if path.startswith('/auth/') else {
                 403:'Access denied',409:'Event key already used',422:'Invalid request data',401:'Please sign in again'
             }.get(status,'Database request failed')
-            raise HTTPException(status, message, headers={'Retry-After':response.headers.get('Retry-After','60')} if status == 429 else None)
+            headers = {'Retry-After':response.headers.get('Retry-After','60')} if status == 429 else None
+            if path.startswith('/auth/'):
+                raise SupabaseAuthError(status, message, error.get('error_code') or code, headers)
+            raise HTTPException(status, message, headers=headers)
         return response.json() if response.content else {}
 
     def rpc(self, name, token=None, payload=None):

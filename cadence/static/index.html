@@ -32,7 +32,7 @@
       <div class="auth-form-wrap">
         <form id="auth-form">
           <p class="eyebrow">WELCOME TO CADENCE</p>
-          <h2 id="auth-title">Good to have you back.</h2>
+          <h2 id="auth-title" tabindex="-1">Good to have you back.</h2>
           <p id="auth-subtitle">Sign in to pick up where you left off.</p>
           <div class="auth-tabs" role="group" aria-label="Account action">
             <button
@@ -52,25 +52,23 @@
               name="display_name"
               maxlength="80"
               autocomplete="name" /></label
-          ><label
+          ><label id="email-field"
             >Email address<input
               id="auth-email"
               name="email"
               type="email"
               required
-              autocomplete="email"
+              autocomplete="username"
               maxlength="254"
               placeholder="you@example.com" /></label
-          ><label
-            >Password<input
+          ><label id="password-field"
+            ><span id="password-label">Password</span><input
               id="auth-password"
               name="password"
               type="password"
               required
-              minlength="8"
               maxlength="128"
-              autocomplete="current-password"
-              placeholder="At least 8 characters" /></label
+              autocomplete="current-password" /></label
           ><label id="favorite-field" hidden
             >Your favorite sound<select id="auth-genre">
               <option value="1">Electronic</option>
@@ -82,6 +80,11 @@
             Sign in <span>↗</span>
           </button>
           <p id="auth-message" role="status" aria-live="polite"></p>
+          <div class="auth-actions">
+            <button type="button" data-auth-mode="resend" hidden>Resend verification email</button>
+            <button type="button" data-auth-mode="recover" hidden>Forgot password?</button>
+            <button type="button" data-auth-mode="login" hidden>Back to sign in</button>
+          </div>
           <a href="/demo/" class="try-demo" id="try-demo"
             >Try the interactive demo <span>↗</span></a
           >

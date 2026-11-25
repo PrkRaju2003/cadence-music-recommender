@@ -1605,6 +1605,21 @@ td:first-child {
   color: #526444;
   line-height: 1.7;
 }
+.auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-bottom: 18px;
+}
+.auth-actions button {
+  color: var(--ink);
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.auth-actions button:disabled {
+  opacity: 0.6;
+}
 #account-menu {
   display: flex;
   align-items: center;

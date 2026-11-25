@@ -10,6 +10,8 @@ from typing import Annotated, Literal
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, SecretStr
@@ -17,22 +19,32 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr
 from .db import ROOT
 from .recommender import HybridRecommender, MODEL_VERSION
 from .sql_reports import REPORTS, ReportInput
-from .supabase import SupabaseGateway
+from .supabase import SupabaseAuthError, SupabaseGateway
 from .rate_limit import check_rate
 
 ACCESS_COOKIE = 'cadence_access'
 REFRESH_COOKIE = 'cadence_refresh'
 
 
-class Credentials(BaseModel):
+class EmailAddress(BaseModel):
     model_config = ConfigDict(extra='forbid')
     email: str = Field(max_length=254, pattern=r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
-    password: SecretStr = Field(min_length=8, max_length=128)
+
+
+class Credentials(EmailAddress):
+    password: SecretStr = Field(min_length=1, max_length=128)
 
 
 class Signup(Credentials):
+    password: SecretStr = Field(min_length=8, max_length=128)
     display_name: str = Field(min_length=1,max_length=80)
     genre_id: int = Field(default=1,ge=1,le=4,strict=True)
+
+
+class PasswordReset(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    recovery_token: SecretStr = Field(min_length=1, max_length=8192)
+    password: SecretStr = Field(min_length=8, max_length=128)
 
 
 class ListenerInput(BaseModel):
@@ -59,6 +71,12 @@ def create_supabase_app(settings, gateway=None):
 
     app = FastAPI(title='Cadence · Supabase Music API',version='2.0.0',lifespan=lifespan,
                   description='Supabase Auth, owner-scoped PostgreSQL RPCs, and hybrid recommendations.')
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_error(request, error):
+        if request.url.path.startswith('/api/auth/'):
+            return JSONResponse({'detail':'Check the form fields and try again.'}, status_code=422)
+        return await request_validation_exception_handler(request, error)
 
     @app.middleware('http')
     async def same_origin_writes(request, call_next):
@@ -111,22 +129,54 @@ def create_supabase_app(settings, gateway=None):
         return {**gateway.rpc('health'),'model':MODEL_VERSION}
 
     @app.post('/api/auth/signup')
-    def signup(body: Signup, request: Request, response: Response):
+    def signup(body: Signup):
         if not body.display_name.strip():
             raise HTTPException(422,'Display name cannot be blank')
-        data = gateway.request('POST','/auth/v1/signup',payload={
+        gateway.request('POST','/auth/v1/signup',payload={
             'email':body.email,'password':body.password.get_secret_value(),
             'data':{'display_name':body.display_name.strip(),'genre_id':body.genre_id}})
-        if data.get('access_token'):
-            set_session(response,request,data)
-            return {'signed_in':True,'message':'Your account is ready'}
-        return {'signed_in':False,'requires_confirmation':True,
-                'message':'Check your email to confirm your account, then return here to sign in.'}
+        return {'signed_in':False,'requires_confirmation':True}
+
+    def send_account_email(path, payload):
+        try:
+            gateway.request('POST', path, payload=payload)
+        except SupabaseAuthError as error:
+            if error.code not in {'user_not_found', 'email_exists', 'user_already_exists'}:
+                raise
+        return {'accepted':True}
+
+    @app.post('/api/auth/resend')
+    def resend(body: EmailAddress):
+        return send_account_email('/auth/v1/resend', {'email':body.email,'type':'signup'})
+
+    @app.post('/api/auth/recover')
+    def recover(body: EmailAddress):
+        return send_account_email('/auth/v1/recover', {'email':body.email})
+
+    @app.post('/api/auth/password')
+    def reset_password(body: PasswordReset):
+        try:
+            gateway.request('PUT', '/auth/v1/user', token=body.recovery_token.get_secret_value(),
+                            payload={'password':body.password.get_secret_value()})
+        except SupabaseAuthError as error:
+            if error.status_code == 401 or error.code in {'bad_jwt', 'session_not_found', 'otp_expired'}:
+                raise HTTPException(401, {'code':'recovery_expired',
+                                          'message':'This reset link has expired. Request a fresh link.'}) from None
+            raise
+        return {'updated':True}
 
     @app.post('/api/auth/login')
     def login(body: Credentials, request: Request, response: Response):
-        data = gateway.request('POST','/auth/v1/token?grant_type=password',payload={
-            'email':body.email,'password':body.password.get_secret_value()})
+        try:
+            data = gateway.request('POST','/auth/v1/token?grant_type=password',payload={
+                'email':body.email,'password':body.password.get_secret_value()})
+        except SupabaseAuthError as error:
+            if error.code == 'email_not_confirmed':
+                raise HTTPException(403, {'code':'email_not_confirmed',
+                                          'message':'Verify your email before signing in.'}) from None
+            if error.code == 'invalid_credentials':
+                raise HTTPException(401,'The email or password is incorrect.') from None
+            raise
         set_session(response,request,data)
         return {'signed_in':True}
 
