@@ -31,7 +31,7 @@
       </div>
       <div class="auth-form-wrap">
         <div class="auth-panel">
-          <form id="auth-form">
+          <form id="auth-form" method="post">
             <p class="eyebrow">WELCOME TO CADENCE</p>
             <h2 id="auth-title" tabindex="-1">Good to have you back.</h2>
             <p id="auth-subtitle">Sign in to pick up where you left off.</p>
@@ -62,15 +62,21 @@
                 autocomplete="username"
                 maxlength="254"
                 placeholder="you@example.com" /></label
-            ><label id="password-field"
-              ><span id="password-label">Password</span><input
-                id="auth-password"
-                name="password"
-                type="password"
-                required
-                maxlength="128"
-                autocomplete="current-password" /></label
-            ><label id="favorite-field" hidden
+            >
+            <div id="password-field" class="auth-password-row">
+              <label>
+                <span id="password-label">Password</span>
+                <input id="auth-password" name="password" type="password" required
+                  maxlength="128" autocomplete="current-password" />
+              </label>
+              <button type="button" id="show-password" aria-controls="auth-password auth-password-confirm">Show password</button>
+            </div>
+            <label id="password-confirm-field" hidden>
+              Confirm new password
+              <input id="auth-password-confirm" type="password" autocomplete="new-password"
+                minlength="8" maxlength="128" disabled />
+            </label>
+            <label id="favorite-field" hidden
               >Your favorite sound<select id="auth-genre">
                 <option value="1">Electronic</option>
                 <option value="2">Jazz</option>

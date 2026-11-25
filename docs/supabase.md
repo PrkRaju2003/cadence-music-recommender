@@ -37,7 +37,7 @@ The live project has the migrations and seed applied. New projects can use the S
 
 Keep email confirmation enabled. Set the project Site URL to `https://cadence-prk.vercel.app/` for production, or the local app URL on a separate development project. The **Confirm signup** and **Reset password** templates use Supabase's `{{ .ConfirmationURL }}` link so the result returns to the Cadence sign-in page.
 
-After signup, Cadence guides the listener to verify their email. An unverified account is blocked by Supabase Auth. After the link is accepted, Cadence shows the verification result and asks the listener to sign in with their password. The sign-in page can also resend verification or request a password reset. After saving a new password, the user signs in again.
+After signup, Cadence guides the listener to verify their email. An unverified account is blocked by Supabase Auth. After the link is accepted, Cadence shows the verification result and asks the listener to sign in with their password. The sign-in page can also resend verification or request a password reset. When a user saves a new password from a reset link, Cadence uses the recovered account email and new password to sign in through Supabase Auth.
 
 In the **Cadence** Supabase project, open **Authentication → Users** for login identities (`auth.users`) and their confirmation status. In **Table Editor**, select the `cadence` schema and open `users` for listener profiles. A private profile has an `auth_id` linking it to the account. Rows with `is_demo = true` are synthetic demo listeners. Private listening activity is stored under the same schema.
 

@@ -516,8 +516,15 @@ const authCopy = {
   signup: ["Create your account", "Verify your email before signing in for the first time.", "Create account"],
   verify: ["Verify your email", "Open the verification link in your inbox, then sign in.", "Continue to sign in"],
   resend: ["Resend verification email", "Enter the email address you used to create your account.", "Send verification email"],
-  password: ["Choose a new password", "Use at least 8 characters. You’ll sign in after saving it.", "Save new password"],
+  password: ["Choose a new password", "Use at least 8 characters.", "Save password and sign in"],
 };
+
+function showPassword(show) {
+  const type = show ? "text" : "password";
+  $("#auth-password").type = type;
+  $("#auth-password-confirm").type = type;
+  $("#show-password").textContent = show ? "Hide password" : "Show password";
+}
 
 function setAuthMode(mode, message = "", focus = false) {
   authMode = mode;
@@ -551,6 +558,12 @@ function setAuthMode(mode, message = "", focus = false) {
   password.autocomplete = mode === "login" ? "current-password" : "new-password";
   password.minLength = mode === "login" ? 1 : 8;
   password.value = "";
+  const confirmation = $("#auth-password-confirm");
+  confirmation.required = mode === "password";
+  confirmation.disabled = !confirmation.required;
+  $("#password-confirm-field").hidden = !confirmation.required;
+  confirmation.value = "";
+  showPassword(false);
   const [title, subtitle, button] = authCopy[mode];
   $("#auth-title").textContent = title;
   $("#auth-subtitle").textContent = subtitle;
@@ -558,6 +571,7 @@ function setAuthMode(mode, message = "", focus = false) {
   $("#auth-message").textContent = message;
   if (focus) $("#auth-title").focus();
 }
+$("#show-password").addEventListener("click", () => showPassword($("#auth-password").type === "password"));
 document
   .querySelectorAll("[data-auth-mode]")
   .forEach((b) =>
@@ -619,8 +633,16 @@ $("#auth-form").addEventListener("submit", async (event) => {
       await post("/auth/resend", { email });
       setAuthMode("verify", "If this account still needs verification, a fresh link is on its way.", true);
     } else if (authMode === "password") {
-      await post("/auth/password", { password, recovery_token: emailLinkResult.token });
-      setAuthMode("login", "Password updated. Sign in with your new password.", true);
+      const confirmation = $("#auth-password-confirm");
+      if (password !== confirmation.value) {
+        message.textContent = "The passwords don’t match.";
+        confirmation.focus();
+        return;
+      }
+      const result = await post("/auth/password", { password, recovery_token: emailLinkResult.token });
+      if (result.email) $("#auth-email").value = result.email;
+      setAuthMode("login", result.signed_in ? "Password updated. Signing you in…" : "Password updated. Sign in with your new password.", !result.signed_in);
+      if (result.signed_in) await signedIn(true);
     } else {
       await post("/auth/login", { email, password });
       await signedIn(true);

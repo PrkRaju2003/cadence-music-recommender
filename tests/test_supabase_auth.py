@@ -92,7 +92,7 @@ def test_signup_handles_email_confirmation_without_fake_login(cloud):
 
 def test_verify_before_login_and_recover_an_account():
     settings=SupabaseSettings('https://project.supabase.co','sb_publishable_test')
-    state={'confirmed':False,'password':'original-password'}
+    state={'confirmed':False,'password':'original-password','reject_grant':False}
 
     def auth_provider(request):
         path=request.url.path
@@ -113,13 +113,15 @@ def test_verify_before_login_and_recover_an_account():
             if request.headers.get('authorization')!='Bearer recovery-test-token':
                 return httpx.Response(403,json={'error_code':'bad_jwt'})
             state['password']=body['password']
-            return httpx.Response(200,json={'id':'test-auth-id'})
+            return httpx.Response(200,json={'id':'test-auth-id','email':'listener@example.test'})
         if path=='/auth/v1/token' and request.url.params.get('grant_type')=='password':
-            if body['password']!=state['password']:
+            assert body['email']=='listener@example.test'
+            if state['reject_grant'] or body['password']!=state['password']:
                 return httpx.Response(400,json={'error_code':'invalid_credentials'})
             if not state['confirmed']:
                 return httpx.Response(400,json={'error_code':'email_not_confirmed'})
-            return httpx.Response(200,json={'access_token':'login-token','refresh_token':'login-refresh'})
+            return httpx.Response(200,json={'access_token':'login-token','refresh_token':'login-refresh',
+                                          'user':{'id':'test-auth-id'}})
         raise AssertionError(f'Unexpected request to {request.method} {path}')
 
     with TestClient(create_supabase_app(settings,SupabaseGateway(settings,httpx.MockTransport(auth_provider)))) as client:
@@ -136,11 +138,19 @@ def test_verify_before_login_and_recover_an_account():
         assert client.post('/api/auth/recover',json=email).json()=={'accepted':True}
         expired=client.post('/api/auth/password',json={'recovery_token':'expired','password':'new-password'})
         assert expired.status_code==401 and expired.json()['detail']['code']=='recovery_expired'
-        updated=client.post('/api/auth/password',json={'recovery_token':'recovery-test-token','password':'new-password'})
-        assert updated.json()=={'updated':True} and 'set-cookie' not in updated.headers
+        new_password=' New-passwörd! '
+        updated=client.post('/api/auth/password',json={'recovery_token':'recovery-test-token','password':new_password})
+        assert updated.json()=={'updated':True,'signed_in':True}
+        assert 'HttpOnly' in updated.headers['set-cookie'] and 'login-token' not in updated.text
         assert client.post('/api/auth/login',json=credentials).status_code==401
-        signed_in=client.post('/api/auth/login',json={**email,'password':'new-password'})
+        signed_in=client.post('/api/auth/login',json={**email,'password':new_password})
         assert signed_in.json()=={'signed_in':True} and 'set-cookie' in signed_in.headers
+
+        state['reject_grant']=True
+        fallback=client.post('/api/auth/password',json={'recovery_token':'recovery-test-token','password':'another-password'})
+        assert fallback.json()=={'updated':True,'signed_in':False,**email}
+        assert 'set-cookie' not in fallback.headers
+        assert state['password']=='another-password'
 
 
 def test_auth_validation_does_not_echo_passwords(cloud):

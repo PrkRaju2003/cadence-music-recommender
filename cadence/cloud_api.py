@@ -153,23 +153,40 @@ def create_supabase_app(settings, gateway=None):
     def recover(body: EmailAddress):
         return send_account_email('/auth/v1/recover', {'email':body.email})
 
+    def password_grant(email, password):
+        return gateway.request('POST','/auth/v1/token?grant_type=password',
+                               payload={'email':email,'password':password})
+
     @app.post('/api/auth/password')
-    def reset_password(body: PasswordReset):
+    def reset_password(body: PasswordReset, request: Request, response: Response):
+        password = body.password.get_secret_value()
         try:
-            gateway.request('PUT', '/auth/v1/user', token=body.recovery_token.get_secret_value(),
-                            payload={'password':body.password.get_secret_value()})
+            account = gateway.request('PUT', '/auth/v1/user', token=body.recovery_token.get_secret_value(),
+                                      payload={'password':password})
         except SupabaseAuthError as error:
             if error.status_code == 401 or error.code in {'bad_jwt', 'session_not_found', 'otp_expired'}:
                 raise HTTPException(401, {'code':'recovery_expired',
                                           'message':'This reset link has expired. Request a fresh link.'}) from None
             raise
-        return {'updated':True}
+        email = account.get('email')
+        account_id = account.get('id')
+        fallback = {'updated':True,'signed_in':False,'email':email}
+        if not email or not account_id:
+            return fallback
+        try:
+            data = password_grant(email, password)
+        except HTTPException:
+            # The password change is already committed. The recovery token is not a Cadence session.
+            return fallback
+        if (data.get('user') or {}).get('id') != account_id:
+            return fallback
+        set_session(response,request,data)
+        return {'updated':True,'signed_in':True}
 
     @app.post('/api/auth/login')
     def login(body: Credentials, request: Request, response: Response):
         try:
-            data = gateway.request('POST','/auth/v1/token?grant_type=password',payload={
-                'email':body.email,'password':body.password.get_secret_value()})
+            data = password_grant(body.email, body.password.get_secret_value())
         except SupabaseAuthError as error:
             if error.code == 'email_not_confirmed':
                 raise HTTPException(403, {'code':'email_not_confirmed',

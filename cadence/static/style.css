@@ -1578,6 +1578,22 @@ td:first-child {
   color: var(--ink);
   max-width: none;
 }
+.auth-password-row {
+  position: relative;
+}
+.auth-password-row input {
+  padding-right: 108px;
+}
+#show-password {
+  position: absolute;
+  inset: auto 4px 1px auto;
+  padding: 0 8px;
+  height: 42px;
+  color: var(--ink);
+  font-size: 11px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .auth-submit {
   width: 100%;
   background: var(--ink);
