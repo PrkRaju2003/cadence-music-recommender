@@ -516,7 +516,6 @@ const authCopy = {
   signup: ["Create your account", "Verify your email before signing in for the first time.", "Create account"],
   verify: ["Verify your email", "Open the verification link in your inbox, then sign in.", "Continue to sign in"],
   resend: ["Resend verification email", "Enter the email address you used to create your account.", "Send verification email"],
-  recover: ["Reset your password", "We’ll send a link to the email address on your account.", "Send reset link"],
   password: ["Choose a new password", "Use at least 8 characters. You’ll sign in after saving it.", "Save new password"],
 };
 
@@ -532,7 +531,11 @@ function setAuthMode(mode, message = "", focus = false) {
     b.setAttribute("aria-pressed", String(on));
   });
   $(".auth-actions [data-auth-mode='resend']").hidden = mode !== "login" && mode !== "verify";
-  $(".auth-actions [data-auth-mode='recover']").hidden = mode !== "login";
+  const recovery = $("#auth-recovery");
+  recovery.hidden = mode !== "login";
+  recovery.open = false;
+  $("#recovery-form").reset();
+  $("#recovery-message").textContent = "";
   $(".auth-actions [data-auth-mode='login']").hidden = credentials || mode === "verify";
   $("#name-field").hidden = mode !== "signup";
   $("#favorite-field").hidden = mode !== "signup";
@@ -615,9 +618,6 @@ $("#auth-form").addEventListener("submit", async (event) => {
     } else if (authMode === "resend") {
       await post("/auth/resend", { email });
       setAuthMode("verify", "If this account still needs verification, a fresh link is on its way.", true);
-    } else if (authMode === "recover") {
-      await post("/auth/recover", { email });
-      setAuthMode("login", "If an account matches that email, a reset link is on its way.", true);
     } else if (authMode === "password") {
       await post("/auth/password", { password, recovery_token: emailLinkResult.token });
       setAuthMode("login", "Password updated. Sign in with your new password.", true);
@@ -628,8 +628,31 @@ $("#auth-form").addEventListener("submit", async (event) => {
     }
   } catch (error) {
     if (error.code === "email_not_confirmed") setAuthMode("verify", error.message, true);
-    else if (error.code === "recovery_expired") setAuthMode("recover", error.message, true);
+    else if (error.code === "recovery_expired") {
+      setAuthMode("login", error.message);
+      $("#auth-recovery").open = true;
+      $("#recovery-email").focus();
+    }
     else message.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
+$("#auth-recovery summary").addEventListener("click", () => {
+  const email = $("#recovery-email");
+  if (!$("#auth-recovery").open && !email.value) email.value = $("#auth-email").value.trim();
+});
+$("#recovery-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = $("#recovery-submit");
+  const message = $("#recovery-message");
+  button.disabled = true;
+  message.textContent = "";
+  try {
+    await post("/auth/recover", { email: $("#recovery-email").value.trim() });
+    message.textContent = "If an account matches that email, a reset link is on its way. Check your inbox and spam folder.";
+  } catch (error) {
+    message.textContent = error.message;
   } finally {
     button.disabled = false;
   }

@@ -30,68 +30,82 @@
         <span class="auth-caption">PLAY / DISCOVER / REPEAT</span>
       </div>
       <div class="auth-form-wrap">
-        <form id="auth-form">
-          <p class="eyebrow">WELCOME TO CADENCE</p>
-          <h2 id="auth-title" tabindex="-1">Good to have you back.</h2>
-          <p id="auth-subtitle">Sign in to pick up where you left off.</p>
-          <div class="auth-tabs" role="group" aria-label="Account action">
-            <button
-              type="button"
-              class="active"
-              data-auth-mode="login"
-              aria-pressed="true"
-            >
-              Sign in</button
-            ><button type="button" data-auth-mode="signup" aria-pressed="false">
-              Create account
+        <div class="auth-panel">
+          <form id="auth-form">
+            <p class="eyebrow">WELCOME TO CADENCE</p>
+            <h2 id="auth-title" tabindex="-1">Good to have you back.</h2>
+            <p id="auth-subtitle">Sign in to pick up where you left off.</p>
+            <div class="auth-tabs" role="group" aria-label="Account action">
+              <button
+                type="button"
+                class="active"
+                data-auth-mode="login"
+                aria-pressed="true"
+              >
+                Sign in</button
+              ><button type="button" data-auth-mode="signup" aria-pressed="false">
+                Create account
+              </button>
+            </div>
+            <label id="name-field" hidden
+              >Your name<input
+                id="auth-name"
+                name="display_name"
+                maxlength="80"
+                autocomplete="name" /></label
+            ><label id="email-field"
+              >Email address<input
+                id="auth-email"
+                name="email"
+                type="email"
+                required
+                autocomplete="username"
+                maxlength="254"
+                placeholder="you@example.com" /></label
+            ><label id="password-field"
+              ><span id="password-label">Password</span><input
+                id="auth-password"
+                name="password"
+                type="password"
+                required
+                maxlength="128"
+                autocomplete="current-password" /></label
+            ><label id="favorite-field" hidden
+              >Your favorite sound<select id="auth-genre">
+                <option value="1">Electronic</option>
+                <option value="2">Jazz</option>
+                <option value="3">Indie</option>
+                <option value="4">Ambient</option>
+              </select></label
+            ><button type="submit" class="auth-submit" id="auth-submit">
+              Sign in <span>↗</span>
             </button>
-          </div>
-          <label id="name-field" hidden
-            >Your name<input
-              id="auth-name"
-              name="display_name"
-              maxlength="80"
-              autocomplete="name" /></label
-          ><label id="email-field"
-            >Email address<input
-              id="auth-email"
-              name="email"
-              type="email"
-              required
-              autocomplete="username"
-              maxlength="254"
-              placeholder="you@example.com" /></label
-          ><label id="password-field"
-            ><span id="password-label">Password</span><input
-              id="auth-password"
-              name="password"
-              type="password"
-              required
-              maxlength="128"
-              autocomplete="current-password" /></label
-          ><label id="favorite-field" hidden
-            >Your favorite sound<select id="auth-genre">
-              <option value="1">Electronic</option>
-              <option value="2">Jazz</option>
-              <option value="3">Indie</option>
-              <option value="4">Ambient</option>
-            </select></label
-          ><button type="submit" class="auth-submit" id="auth-submit">
-            Sign in <span>↗</span>
-          </button>
-          <p id="auth-message" role="status" aria-live="polite"></p>
-          <div class="auth-actions">
-            <button type="button" data-auth-mode="resend" hidden>Resend verification email</button>
-            <button type="button" data-auth-mode="recover" hidden>Forgot password?</button>
-            <button type="button" data-auth-mode="login" hidden>Back to sign in</button>
-          </div>
+            <p id="auth-message" role="status" aria-live="polite"></p>
+            <div class="auth-actions">
+              <button type="button" data-auth-mode="resend" hidden>Resend verification email</button>
+              <button type="button" data-auth-mode="login" hidden>Back to sign in</button>
+            </div>
+          </form>
+          <details id="auth-recovery" class="auth-recovery">
+            <summary>Forgot password?</summary>
+            <form id="recovery-form" method="post">
+              <p class="recovery-copy">Enter the email you use for Cadence to get a password reset link.</p>
+              <label>
+                Account email
+                <input id="recovery-email" name="email" type="email" autocomplete="email"
+                  maxlength="254" placeholder="you@example.com" required />
+              </label>
+              <button type="submit" class="auth-submit" id="recovery-submit">Send reset link ↗</button>
+              <p id="recovery-message" role="status" aria-live="polite"></p>
+            </form>
+          </details>
           <a href="/demo/" class="try-demo" id="try-demo"
             >Try the interactive demo <span>↗</span></a
           >
           <p class="auth-privacy">
             No account needed for the demo. Your personal history stays private.
           </p>
-        </form>
+        </div>
       </div>
     </section>
     <aside>
